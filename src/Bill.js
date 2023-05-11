@@ -1,14 +1,14 @@
-import { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {Html5QrcodeScanner} from "html5-qrcode";
+import './Bill.css';
 
+// TODO Remove window.items from the below.
 function Bill(){
-	let itemId_ref = useRef();
-	let name_ref = useRef();
-	let price_ref = useRef();
-	let [items, setItems] = useState([]);
-	let [scanner, setScanner] = useState([]);
+	let [ items, setItems ] = useState([]);
+	let scanner = useRef(null);
 
 	function addItem(itemId, name, price){
+		let items = window.items;
 		let index = items.findIndex(item => item.itemId === itemId);
 		let newItem = {
 			"itemId": itemId,
@@ -16,27 +16,33 @@ function Bill(){
 			"price": price,
 			"quantity": 1
 		}
-		if(index === -1){
-			setItems([...items, newItem])
-		}else{
-			let updatedItems = [...items];
+		let updatedItems = [];
+		if(index < 0){
+			updatedItems = [...items, newItem];
+			setItems(updatedItems);
+		}else{	
+			updatedItems = [...items];
 			newItem.quantity+=items[index].quantity;
 			updatedItems[index] = newItem;
 			setItems(updatedItems);
 		}
+		window.items = updatedItems;
 	}
 
 	function removeOneItem(itemId) {
+		let items = window.items;
 		let index = items.findIndex(item => item.itemId === itemId);
 		if(index>-1){
+			let updatedItems = [];
 			if(items[index].quantity === 1){
-				let updatedItems = items.filter((_, i) => i !== index);
+				updatedItems = items.filter((_, i) => i !== index);
 				setItems(updatedItems);
 			}else{
-				let updatedItems = [...items];
+				updatedItems = [...items];
 				updatedItems[index].quantity--;
 				setItems(updatedItems);
 			}
+			window.items = updatedItems;
 		}
 	}
 
@@ -44,9 +50,11 @@ function Bill(){
 	// Define the callback function for successful scans
 	const onScanSuccess = (decodedText, decodedResult) => {
 		let item=JSON.parse(decodedText)
-		addItem(parseInt(item.itemId), item.name, parseInt(item.price));
-		window.html5QrcodeScanner.pause(true);
+		addItem(item.itemId, item.name, parseInt(item.price));
+		scanner.current.pause(true);
 	};
+
+
 	useEffect(() => {
 	    let html5QrcodeScanner = null;
 
@@ -56,12 +64,11 @@ function Bill(){
 	      // Optional: Set a callback function to handle scanned results
 	      html5QrcodeScanner.render(onScanSuccess);
 
-	      setScanner(html5QrcodeScanner);
-
-	      window.html5QrcodeScanner = html5QrcodeScanner;
+	      scanner.current = html5QrcodeScanner;
 	    };
-
 	    initializeScanner();
+
+		window.items = items;
 
 	    // Clean up the scanner when the component unmounts
 	    return () => {
@@ -77,10 +84,10 @@ function Bill(){
 				<div id="reader" width="600px"></div>
 			</div>
 			<div>
-				<button onClick={()=>{window.html5QrcodeScanner.resume()}}> Add Items </button>
+				<button className="add_btn" onClick={()=>{scanner.current.resume()}}> Add Items </button>
 			</div>
 			<div>
-				<table>
+				<table className="table">
 					<thead>
 						<tr>
 							<th> ItemId </th>
@@ -99,9 +106,17 @@ function Bill(){
 				        	<td> {item.price} </td>
 				        	<td> {item.quantity} </td>
 				        	<td> {item.price * item.quantity} </td>
-				        	<td> <button onClick={()=>removeOneItem(item.itemId)} > Remove 1 Item </button> </td>
+				        	<td> <button className="remove_btn" onClick={()=>removeOneItem(item.itemId)} > Remove 1 Item </button> </td>
 				        </tr>
 			        ))}
+			        	<tr key="Result">
+				        	<td>  </td>
+				        	<td>  </td>
+				        	<td>  </td>
+				        	<td> { items.map((item) => item.quantity).reduce((sum, quantity) => sum + quantity, 0) } </td>
+				        	<td> { items.map((item) => item.price * item.quantity).reduce((sum, price) => sum + price, 0) } </td>
+				        	<td>  </td>
+				        </tr>
 			        </tbody>
 				</table>
 			</div>

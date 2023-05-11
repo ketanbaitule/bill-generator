@@ -1,0 +1,43 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Style table header */
+.table thead th, .table tbody tr:last-child {
+  background-color: #f2f2f2;
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+/* Style table body */
+.table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+/* Style alternating rows */
+.table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Add hover effect on rows */
+.table tbody tr:hover {
+  background-color: #e6e6e6;
+}
+
+.add_btn{
+  width: 100%;
+  padding: 10px;
+  margin: 20px 0;
+  background-color: #24cff7;
+  color: white;
+}
+
+.remove_btn{
+  padding: 10px;
+  background-color: red;
+  margin: 5px 0;
+  color: white;
+}
