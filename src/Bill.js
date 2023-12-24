@@ -2,51 +2,41 @@ import { useRef, useState, useEffect } from 'react';
 import {Html5QrcodeScanner} from "html5-qrcode";
 
 function Bill(){
-	let itemId_ref = useRef();
-	let name_ref = useRef();
-	let price_ref = useRef();
 	let [items, setItems] = useState([]);
-	let [scanner, setScanner] = useState([]);
+	let scanner = useRef();
 
 	function addItem(itemId, name, price){
-		let index = items.findIndex(item => item.itemId === itemId);
-		let newItem = {
-			"itemId": itemId,
-			"name": name,
-			"price": price,
-			"quantity": 1
-		}
-		if(index === -1){
-			setItems([...items, newItem])
-		}else{
-			let updatedItems = [...items];
-			newItem.quantity+=items[index].quantity;
-			updatedItems[index] = newItem;
-			setItems(updatedItems);
-		}
+		setItems((prev)=>{
+			let updatedItems = [...prev];
+			let index = prev.findIndex(item => item.itemId === itemId);
+			if(index === -1){
+				updatedItems.push({
+					"itemId": itemId,
+					"name": name,
+					"price": price,
+					"quantity": 1
+				});
+			}else{
+				updatedItems[index].quantity++;
+			}
+			return updatedItems;
+		})
 	}
 
 	function removeOneItem(itemId) {
-		let index = items.findIndex(item => item.itemId === itemId);
-		if(index>-1){
-			if(items[index].quantity === 1){
-				let updatedItems = items.filter((_, i) => i !== index);
-				setItems(updatedItems);
-			}else{
-				let updatedItems = [...items];
+		setItems((prev)=>{
+			let updatedItems = [...prev];
+			let index = updatedItems.findIndex(item => item.itemId === itemId);
+			if(index > -1){
 				updatedItems[index].quantity--;
-				setItems(updatedItems);
+				if(updatedItems[index].quantity <= 0)
+					updatedItems.splice(index, 1);
 			}
-		}
+			return updatedItems;
+		})
 	}
 
 	// Scanner Function
-	// Define the callback function for successful scans
-	const onScanSuccess = (decodedText, decodedResult) => {
-		let item=JSON.parse(decodedText)
-		addItem(parseInt(item.itemId), item.name, parseInt(item.price));
-		window.html5QrcodeScanner.pause(true);
-	};
 	useEffect(() => {
 	    let html5QrcodeScanner = null;
 
@@ -54,11 +44,13 @@ function Bill(){
 	      html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
 
 	      // Optional: Set a callback function to handle scanned results
-	      html5QrcodeScanner.render(onScanSuccess);
+	      html5QrcodeScanner.render((decodedText) => {
+			let item=JSON.parse(decodedText);
+			addItem(parseInt(item.itemId), item.name, parseInt(item.price));
+			scanner.current.pause(true);
+			});
 
-	      setScanner(html5QrcodeScanner);
-
-	      window.html5QrcodeScanner = html5QrcodeScanner;
+	      scanner.current = html5QrcodeScanner;
 	    };
 
 	    initializeScanner();
@@ -77,7 +69,7 @@ function Bill(){
 				<div id="reader" width="600px"></div>
 			</div>
 			<div>
-				<button onClick={()=>{window.html5QrcodeScanner.resume()}}> Add Items </button>
+				<button onClick={()=>{scanner.current.resume()}}> Add Items </button>
 			</div>
 			<div>
 				<table>
